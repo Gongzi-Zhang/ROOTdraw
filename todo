@@ -1,0 +1,8 @@
+* tune style: 
+  -- x title position
+  -- y title position
+  -- page title
+  -- pad title
+
+* customized draw option and statistics
+  -- line, marker, label (style, color, size)
