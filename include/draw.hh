@@ -82,7 +82,7 @@ public:
   void DoDrawClear();
   void BadDraw(TString);
   void CheckRootFiles();
-  Int_t OpenRootFiles();
+  void OpenRootFiles();
   void PrintToFile();
   void PrintPages();
   void MyCloseWindow();

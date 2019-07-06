@@ -206,6 +206,22 @@ void DrawGUI::DoDraw()
 {
   // The main Drawing Routine.
 
+  // clean previous plot
+  TIter cnext(fCanvas->GetListOfPrimitives());
+  TObject *padObj, *histObj;
+  while ((padObj=cnext())) {
+    if (padObj->InheritsFrom("TPad")) {
+      TIter pnext(((TPad*)padObj)->GetListOfPrimitives());
+      while ((histObj=pnext())) {
+	if (histObj->InheritsFrom("TH1")) {
+	  histObj->Delete();
+	}
+      }
+      padObj->Delete();
+    }
+  }
+  fCanvas->Clear();
+
   gStyle->SetOptStat(1110);
   gStyle->SetStatFontSize(0.08);
   if (fConfig->IsLogy(current_page)) {
@@ -557,8 +573,6 @@ void DrawGUI::DoDrawClear() {
   for(UInt_t i=0; i<fTreeEntries.size(); i++) {
     fTreeEntries[i] = (Int_t) fRootTree[i]->GetEntries();
   }
-  
-
 }
 
 void DrawGUI::BadDraw(TString errMessage) {
@@ -589,10 +603,9 @@ void DrawGUI::CheckRootFiles() {
     fRunNumber->SetText(rnBuff.Data());
     hframe->Layout();
   }
-
 }
 
-Int_t DrawGUI::OpenRootFiles() {
+void DrawGUI::OpenRootFiles() {
   // Open RootFiles.  Die if anyone can't be opened
   runNumbers.clear();
   fRootFiles.clear();
@@ -614,7 +627,7 @@ Int_t DrawGUI::OpenRootFiles() {
     GetTreeVars();
     for(UInt_t i=0; i<fRootTree.size(); i++) {
       if(fRootTree[i]==0) {
-  fRootTree.erase(fRootTree.begin() + i);
+	fRootTree.erase(fRootTree.begin() + i);
       }
     }
   }
