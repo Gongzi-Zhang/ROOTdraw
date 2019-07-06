@@ -75,7 +75,7 @@ public:
   void GetTreeVars();
   void GetRootTree();
   UInt_t GetTreeIndex(TString);
-  UInt_t GetTreeIndexFromName(TString);
+  UInt_t GetTreeIndexByName(TString);
   void TreeDraw(std::vector <TString>); 
   void HistDraw(std::vector <TString>);
   void MacroDraw(std::vector <TString>);

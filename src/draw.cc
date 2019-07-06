@@ -1,4 +1,5 @@
 #include "draw.hh"
+#include "libstrparse.hh"
 #include <string>
 #include <fstream>
 #include <iostream>
@@ -471,43 +472,37 @@ void DrawGUI::GetRootTree() {
   
 }
 
-UInt_t DrawGUI::GetTreeIndex(TString var) {
+UInt_t DrawGUI::GetTreeIndex(TString var) { // FIXME need a more robust parsing algorithm
   // Utility to find out which Tree (in fRootTree) has the specified
   // variable "var".  If the variable is a collection of Tree
-  // variables (e.g. bcm1:lumi1), will only check the first
-  // (e.g. bcm1).  
-  // Returns the correct index.  if not found returns an index 1
-  // larger than fRootTree.size()
+  // variables (e.g. bcm1:lumi1), will only check the first (e.g. bcm1).  
+  // Returns the correct index.  if not found returns -1
 
   //  This is for 2d draws... look for the first only
   if(var.Contains(":")) {
-    TString first_var = fConfig->SplitString(var,":")[0];
-    var = first_var;
+    var = strparse::split(var,":")[0];
   }
   if(var.Contains("-")) {
-    TString first_var = fConfig->SplitString(var,"-")[0];
-    var = first_var;
+    var = strparse::split(var,"-")[0];
   }
   if(var.Contains("/")) {
-    TString first_var = fConfig->SplitString(var,"/")[0];
-    var = first_var;
+    var = strparse::split(var,"/")[0];
   }
   if(var.Contains("*")) {
-    TString first_var = fConfig->SplitString(var,"*")[0];
-    var = first_var;
+    var = strparse::split(var,"*")[0];
   }
   if(var.Contains("+")) {
-    TString first_var = fConfig->SplitString(var,"+")[0];
-    var = first_var;
+    var = strparse::split(var,"+")[0];
   }
-  if(var.Contains("(")) {
-    TString first_var = fConfig->SplitString(var,"(")[0];
-    var = first_var;
+  if(var.Contains(".")) {
+    var = strparse::split(var,".")[0];
+  }
+  if(var.Contains("(")) { // FIXME
+    var = strparse::split(var,"(")[0];
   }
   //  This is for variables with multiple dimensions.
   if(var.Contains("[")) {
-    TString first_var = fConfig->SplitString(var,"[")[0];
-    var = first_var;
+    var = strparse::split(var,"[")[0];
   }
 
   if(fVerbosity>=3)
@@ -516,16 +511,17 @@ UInt_t DrawGUI::GetTreeIndex(TString var) {
   for(UInt_t iTree=0; iTree<treeVars.size(); iTree++) {
     for(UInt_t ivar=0; ivar<treeVars[iTree].size(); ivar++) {
       if(fVerbosity>=4)
-	cout<<"Checking tree "<<iTree<<" name:"<<fRootTree[iTree]->GetName()
-	    <<" \t var "<<ivar<<" >> "<<treeVars[iTree][ivar]<<endl;
-      if(var == treeVars[iTree][ivar]) return iTree;
+        cout<<"Checking tree "<<iTree<<" name:"<<fRootTree[iTree]->GetName()
+            <<" \t var "<<ivar<<" >> "<<treeVars[iTree][ivar]<<endl;
+      if(var == treeVars[iTree][ivar]) 
+        return iTree;
     }
   }
 
-  return fRootTree.size()+1;
+  return -1;
 }
 
-UInt_t DrawGUI::GetTreeIndexFromName(TString name) {
+UInt_t DrawGUI::GetTreeIndexByName(TString name) {
   // Called by TreeDraw().  Tries to find the Tree index provided the
   //  name.  If it doesn't match up, return a number that's one larger
   //  than the number of found trees.
@@ -762,8 +758,13 @@ void DrawGUI::TreeDraw(vector <TString> command) {
       iTree = GetTreeIndex(var);
       if(fVerbosity>=2)
         cout<<"got tree index from variable: "<<iTree<<endl;
+      if(iTree == -1) {
+        cerr << "Error, no tree contains the input variable, please check it:" << endl
+             << "\t" << var << endl;
+        exit(-1);
+      }
     } else {
-      iTree = GetTreeIndexFromName(command[i*nField+4]);
+      iTree = GetTreeIndexByName(command[i*nField+4]);
       if(fVerbosity>=2)
         cout<<"got tree index from command: "<<iTree<<endl;
     }
@@ -796,22 +797,22 @@ void DrawGUI::TreeDraw(vector <TString> command) {
       if(fVerbosity>=3)
         cout<<"Finished drawing with error code "<<errcode<<endl;
 
-      TH1* temphist = (TH1*) hobj;
-      gPad->Update(); // always remember to update pad in order to find stats box
-      TPaveStats * st = (TPaveStats*) gPad->GetPrimitive("stats");
-      st->SetName("myStats"); // why this so important ???
-      TList* listOfLines = st->GetListOfLines();
-      TText * rm = st->GetLineWith("Dev");
-      Float_t size = rm->GetTextSize();
-      // listOfLines->Remove(rm);
-      TLatex* meanError = new TLatex(0, 0, Form("MeanError = %.4g", temphist->GetMeanError()));
-      meanError->SetTextSize(size);
-      listOfLines->Add(meanError);
-      temphist->SetStats(0);
-      gPad->Modified();
+//      TH1* temphist = (TH1*) hobj;
+//      gPad->Update(); // always remember to update pad in order to find stats box
+//      TPaveStats * st = (TPaveStats*) gPad->GetPrimitive("stats");
+//      st->SetName("myStats"); // why this so important ???
+//      TList* listOfLines = st->GetListOfLines();
+//      TText * rm = st->GetLineWith("Dev");
+//      Float_t size = rm->GetTextSize();
+//      // listOfLines->Remove(rm);
+//      TLatex* meanError = new TLatex(0, 0, Form("MeanError = %.4g", temphist->GetMeanError()));
+//      meanError->SetTextSize(size);
+//      listOfLines->Add(meanError);
+//      temphist->SetStats(0);
+//      gPad->Modified();
 
-      Float_t ratio = abs(temphist->GetMean())/temphist->GetMeanError();
-      printf("var: %s\t mean: %.4g\t meanerror: %.4g\t ratio: %.4g\n", var.Data(), temphist->GetMean(), temphist->GetMeanError(), ratio);
+//      Float_t ratio = abs(temphist->GetMean())/temphist->GetMeanError();
+//      printf("var: %s\t mean: %.4g\t meanerror: %.4g\t ratio: %.4g\n", var.Data(), temphist->GetMean(), temphist->GetMeanError(), ratio);
 
       if(errcode==-1) {
         BadDraw(var+" not found");

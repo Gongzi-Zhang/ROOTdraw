@@ -55,7 +55,6 @@ public:
   TString GetPageTitle(UInt_t);
   UInt_t GetDrawCount(UInt_t);           // Number of histograms in a page
   std::vector <TString> GetDrawCommand(UInt_t,UInt_t);
-  std::vector <TString> SplitString(TString,TString);
   void OverrideRootFile(std::vector<UInt_t>);
 };
 

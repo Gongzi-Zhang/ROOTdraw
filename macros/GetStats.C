@@ -6,7 +6,12 @@ void GetStats(){
   TString statStr[Nstats];
   TString statStrNumbers[Nstats];
 
-  TTree* r = (TTree*)gROOT->FindObject("evt");
+//  TTree* r = (TTree*)gROOT->FindObject("evt");  // this doesn't work with multiple runs
+  TChain * r = new TChain("evt");
+  int nFiles = gROOT->GetListOfFiles()->GetEntries();
+  for(int i=0; i<nFiles; i++) {
+    r->Add(gROOT->GetListOfFiles()->At(i)->GetName());
+  }
   TH1D* hist = new TH1D("CodaEventNumber", "CodaEventNumber", 100, 0, 10e9);
  
   r->Project(hist->GetName(), "CodaEventNumber", "1");

@@ -4,6 +4,7 @@
 // 2019-07-04
 #include "libstrparse.hh"
 #include <utility>
+#include <vector>
 // #include <iostream>
 #include <TString.h>
 
@@ -35,13 +36,13 @@ int strparse::first_unquoted(const TString line, const char c, int start_pos) {
         quote = '"';
         qindex = dqindex;
       }
-      before_string = before_string(qindex+1, before_string.Length());
+      before_string.Remove(0, qindex+1);
       qindex = before_string.First(quote);
       if (qindex == -1) { // find unmatched quote
         unmatched_quote = true;
         break;
       } else { // find match quote; search next one
-        before_string = before_string(qindex+1, before_string.Length());
+        before_string.Remove(0, qindex+1);
         sqindex = before_string.First('\'');
         dqindex = before_string.First('"');
       }
@@ -76,7 +77,7 @@ int strparse::first_unquoted(const TString line, const char c, int start_pos) {
 TString strparse::strip_head_space(const TString line) {
   TString temp = line;
   while (temp.BeginsWith(' ') || temp.BeginsWith('\t'))
-    temp = temp(1, temp.Length());
+    temp.Remove(0,1);
 
   return temp;
 }
@@ -85,7 +86,7 @@ TString strparse::strip_head_space(const TString line) {
 TString strparse::strip_tail_space(const TString line) {
   TString temp = line;
   while (temp.EndsWith(" ") || temp.EndsWith("\t"))
-    temp = temp(0, temp.Length()-1);
+    temp.Chop();
 
   return temp;
 }
@@ -107,11 +108,38 @@ std::pair <int, int> strparse::get_quotes(const TString line, int start_pos) {
     begin_quote = dqindex;
   }
 
-  left_line = left_line(begin_quote+1, left_line.Length());
+  left_line.Remove(0, begin_quote+1);
   end_quote = left_line.First(quote);
   if (end_quote == -1) {  // unmatched quote
     return std::make_pair (begin_quote+start_pos, -1);
   } else {
     return std::make_pair (begin_quote+start_pos, start_pos+begin_quote+1+end_quote);
   }
+}
+
+std::vector <TString> strparse::split(TString line,TString delim) {
+  std::vector <TString> v; // return value
+
+  TString left_line = line;
+  int l = delim.Length(); // may be multi-char delimiter
+
+  while(left_line.BeginsWith(delim)) {  // removing all beginning delimiters
+    left_line.Remove(0, l);
+  }
+  while(left_line.EndsWith(delim)) {  // removing all ending delimiters
+    left_line = left_line(0, left_line.Length()-l);
+  }
+
+  int i = left_line.Index(delim);
+  while (i != -1) {
+    v.push_back(left_line(0, i));
+    left_line.Remove(0,i+l);
+    while(left_line.Index(delim) == 0) {  // continuous delimiters
+      left_line.Remove(0,l);
+    }
+    i = left_line.Index(delim);
+  }
+  v.push_back(left_line);
+
+  return v;
 }

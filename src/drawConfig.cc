@@ -166,12 +166,12 @@ Bool_t DrawConfig::ParseConfig()
   UInt_t command_cnt=0;
   UInt_t j=0;
   for(UInt_t i=0;i<sConfFile.size();i++) {
-    vector<TString> command = SplitString(sConfFile[i], " ");
+    vector<TString> command = strparse::split(sConfFile[i], " ");
     // "newpage" command
     if(command[0] == "newpage") {
       // command is first of pair
       for(j=i+1;j<sConfFile.size();j++) {
-        if( (SplitString(sConfFile[j], " "))[0] != "newpage" ) {
+        if( (strparse::split(sConfFile[j], " "))[0] != "newpage" ) {
           // Count how many commands within the page
           command_cnt++;
         } else break;
@@ -337,7 +337,7 @@ Bool_t DrawConfig::IsLogy(UInt_t page) {
   // Check if last word on line is "logy"
 
   UInt_t page_index = pageInfo[page].first;
-  vector <TString> command = SplitString(sConfFile[page_index], " ");
+  vector <TString> command = strparse::split(sConfFile[page_index], " ");
   Int_t word_index = command.size()-1;
   if (word_index <= 0) return kFALSE;
   TString option = command[word_index];  
@@ -366,7 +366,7 @@ pair <UInt_t, UInt_t> DrawConfig::GetPageDim(UInt_t page)
 
   // This is the page index in sConfFile.
   UInt_t page_index = pageInfo[page].first;
-  vector<TString> command = SplitString(sConfFile[page_index], " ");
+  vector<TString> command = strparse::split(sConfFile[page_index], " ");
   
   UInt_t size1 = 2;
   if (IsLogy(page)) size1 = 3;  // last word is "logy"
@@ -406,7 +406,7 @@ TString DrawConfig::GetPageTitle(UInt_t page)
   TString title;
 
   UInt_t lineIndex = pageInfo[page].first + 1;  // check the first following non-blank line 
-  vector<TString> command = SplitString(sConfFile[lineIndex], " ");
+  vector<TString> command = strparse::split(sConfFile[lineIndex], " ");
 
   if(command[0] == "title") { 
     pair <int, int> quotes = strparse::get_quotes(sConfFile[lineIndex], 5);
@@ -447,7 +447,7 @@ vector <UInt_t> DrawConfig::GetDrawIndex(UInt_t page)
   UInt_t iter_command = pageInfo[page].first+1;
 
   for(UInt_t i=0; i<pageInfo[page].second; i++) {
-    if(SplitString(sConfFile[iter_command+i], " ")[0] != "title") {
+    if(strparse::split(sConfFile[iter_command+i], " ")[0] != "title") {
       index.push_back(iter_command+i);
     }
   }
@@ -461,7 +461,7 @@ UInt_t DrawConfig::GetDrawCount(UInt_t page)
   UInt_t draw_count=0;
 
   for(UInt_t i=0; i<pageInfo[page].second; i++) {
-    if(SplitString(sConfFile[pageInfo[page].first+i+1], " ")[0] != "title") 
+    if(strparse::split(sConfFile[pageInfo[page].first+i+1], " ")[0] != "title") 
       draw_count++;
   }
 
@@ -522,7 +522,7 @@ vector <TString> DrawConfig::GetDrawCommand(UInt_t page, UInt_t nCommand)
   // extract each sub draw command
   for(int iDraw=0; iDraw<nDraw; iDraw++){
     // First word is the variable
-    vector <TString> subcommand = SplitString(subCommands[iDraw], " ");
+    vector <TString> subcommand = strparse::split(subCommands[iDraw], " ");
     if(subcommand.size()>=1) {
       out_command[nField*iDraw+0] = subcommand[0];
     }
@@ -668,37 +668,6 @@ vector <TString> DrawConfig::GetDrawCommand(UInt_t page, UInt_t nCommand)
   }
 
   return out_command;
-}
-
-vector <TString> DrawConfig::SplitString(TString instring,TString delim) 
-{
-  // Utility to split up a string on the deliminator.
-  //  returns a vector of strings.
-
-  vector <TString> v;
-
-  TString remainingString = instring;
-  TString tempstring = instring;
-  int i;
-
-  while (remainingString.Index(delim) != -1) {
-    i = remainingString.Index(delim);
-    tempstring.Remove(i);
-    v.push_back(tempstring);
-    remainingString.Remove(0,i+1);
-    while(remainingString.Index(delim) == 0) {
-      remainingString.Remove(0,1);
-    }
-    tempstring = remainingString;
-  }
-
-  while(tempstring.EndsWith(delim)) {
-    tempstring.Chop();
-  }
-     
-  if(!tempstring.IsNull()) v.push_back(tempstring);
-
-  return v;
 }
 
 void DrawConfig::OverrideRootFile(std::vector<UInt_t> runnumbers) 
