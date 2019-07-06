@@ -225,6 +225,7 @@ void DrawGUI::DoDraw()
   gStyle->SetOptStat(1110);
   gStyle->SetStatFontSize(0.08);
   if (fConfig->IsLogy(current_page)) {
+    printf("\nFound a logy!!!\n\n");
     gStyle->SetOptLogy(1);
   } else {
     gStyle->SetOptLogy(0);
@@ -539,16 +540,14 @@ UInt_t DrawGUI::GetTreeIndex(TString var) { // FIXME need a more robust parsing 
 
 UInt_t DrawGUI::GetTreeIndexByName(TString name) {
   // Called by TreeDraw().  Tries to find the Tree index provided the
-  //  name.  If it doesn't match up, return a number that's one larger
-  //  than the number of found trees.
+  //  name.  If it doesn't match up, return -1
   for(UInt_t iTree=0; iTree<fRootTree.size(); iTree++) {
     TString treename = fRootTree[iTree]->GetName();
     if(name == treename) {
       return iTree;
     }
   }
-
-  return fRootTree.size()+1;
+  return -1;
 }
 
 void DrawGUI::MacroDraw(vector <TString> command) {
@@ -738,6 +737,8 @@ void DrawGUI::TreeDraw(vector <TString> command) {
   for( int i=0; i<nDraw; i++){
     TString var = command[i*nField+0];
 
+    /* extract draw info: var, cut and drawopt */
+
     //  Check to see if we're projecting to a specific histogram
     TString histoname = command[i*nField+0](TRegexp(">>.+(?"));
     if (histoname.Length()>0){
@@ -747,6 +748,7 @@ void DrawGUI::TreeDraw(vector <TString> command) {
       if(fVerbosity>=3)
         std::cout << histoname << " "<< command[i*nField+0](TRegexp(">>.+(?")) <<std::endl;
     } else {
+//      histoname = "htemp";
       histoname = Form("%s_%d", var.Data(), i);
     }
     
@@ -771,11 +773,6 @@ void DrawGUI::TreeDraw(vector <TString> command) {
       iTree = GetTreeIndex(var);
       if(fVerbosity>=2)
         cout<<"got tree index from variable: "<<iTree<<endl;
-      if(iTree == -1) {
-        cerr << "Error, no tree contains the input variable, please check it:" << endl
-             << "\t" << var << endl;
-        exit(-1);
-      }
     } else {
       iTree = GetTreeIndexByName(command[i*nField+4]);
       if(fVerbosity>=2)
@@ -784,13 +781,22 @@ void DrawGUI::TreeDraw(vector <TString> command) {
     TString drawopt = command[i*nField+2];
     if(fVerbosity>=3)
       cout<<"\tDraw option:"<<drawopt<<" and histo name "<<histoname<<endl;
-//    if(i>0) {
-//      drawopt += " same"; // so that multiplots will be drew
-//    }
+    if(i>0) {
+      if (drawopt.IsNull())
+        drawopt = "same"; // so that multiplots will be drew
+      else
+        drawopt += " same";
+      /* !!! no space before same !!!
+       * drawopt += " same" 
+       * will draw only the first plot
+       */
+    }
 
 
     Int_t errcode=0;
-    if (iTree <= fRootTree.size() ) {
+    if(iTree == -1) {
+      BadDraw(var+" not found");
+    } else {
       if(fVerbosity>=1){
         cout<<__PRETTY_FUNCTION__<<"\t"<<__LINE__<<endl;
         cout<<command[0]<<"\t"<<command[i*nField+1]<<"\t"<<command[i*nField+2]
@@ -801,12 +807,13 @@ void DrawGUI::TreeDraw(vector <TString> command) {
       }
 
       errcode = fRootTree[iTree]->Draw(Form("%s>>%s", var.Data(), histoname.Data()),cut,drawopt);
+//      errcode = fRootTree[iTree]->Draw(Form("%s", var.Data()),cut,drawopt);
 
       if (command[i*nField+5].EqualTo("grid")){ // FIXME for grid option, only need to check the last one
         gPad->SetGrid();
       }
 
-      TObject *hobj = (TObject*)gPad->FindObject(histoname);
+//      TObject *hobj = (TObject*)gPad->FindObject(histoname);
       if(fVerbosity>=3)
         cout<<"Finished drawing with error code "<<errcode<<endl;
 
@@ -836,19 +843,17 @@ void DrawGUI::TreeDraw(vector <TString> command) {
           //  Makes it less likely to cause a name collision if two plot titles are the same.
           //  If you draw the exact same plot twice, the histograms will have the same name, but
           //  since they are exactly the same, you likely won't notice (or it will complain at you).
-          TString tmpstring(var);
-          tmpstring += cut.GetTitle();
-          tmpstring += drawopt;
-          tmpstring += command[i*nField+3];
-          TString myMD5 = tmpstring.MD5();
-          TH1* thathist = (TH1*)hobj;
-          thathist->SetNameTitle(myMD5,command[i*nField+3]);
+//          TString tmpstring(var);
+//          tmpstring += cut.GetTitle();
+//          tmpstring += drawopt;
+//          tmpstring += command[i*nField+3];
+//          TString myMD5 = tmpstring.MD5();
+//          TH1* thathist = (TH1*)hobj;
+//          thathist->SetNameTitle(myMD5,command[i*nField+3]);
         }
       } else {
         BadDraw("Empty Histogram");
       }
-    } else {
-      BadDraw(var+" not found");
     }
   }
 }

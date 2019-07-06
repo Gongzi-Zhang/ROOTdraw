@@ -341,10 +341,6 @@ Bool_t DrawConfig::IsLogy(UInt_t page) {
   Int_t word_index = command.size()-1;
   if (word_index <= 0) return kFALSE;
   TString option = command[word_index];  
-  if(option == "logy") {
-    printf("\nFound a logy!!!\n\n");
-    return kTRUE;
-  }
   if(fVerbosity>=1){
     cout << "DrawConfig::IsLogy()\t" << "option: " << option << " in page " << page_index << endl;
     for (Int_t i= 0; i < command.size(); i++) {
@@ -353,7 +349,10 @@ Bool_t DrawConfig::IsLogy(UInt_t page) {
     cout << endl;
   }
 
-  return kFALSE;
+  if(option == "logy") 
+    return kTRUE;
+  else 
+    return kFALSE;
 }
 
 pair <UInt_t, UInt_t> DrawConfig::GetPageDim(UInt_t page) 

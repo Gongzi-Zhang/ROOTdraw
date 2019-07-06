@@ -102,6 +102,10 @@ Examples of these options can be found in macros/defaul.cfg.
 - **macro someMacro.C**
     for more complicated plots you can write your own macro and then output 
     the result in the draw tab. The macro needs to create only one plot. 
+    
+    !!!Remember to delete any new object in your macro!!! otherwise it may cause
+    memory leak when you check it many times (it will be redrew everytime you 
+    push the corresponding page radio button).
 ### Non-standard GUI color
 - **guicolor** 
     followed by the string of a color like (white, red, blue) allows you to 
