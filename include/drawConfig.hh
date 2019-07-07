@@ -4,6 +4,7 @@
 #include <utility>
 #include <fstream>
 #include <vector>
+#include <list>
 #include <TString.h>
 #include "TCut.h"
 
@@ -55,6 +56,7 @@ public:
   TString GetPageTitle(UInt_t);
   UInt_t GetDrawCount(UInt_t);           // Number of histograms in a page
   std::vector <TString> GetDrawCommand(UInt_t,UInt_t);
+  std::list <TString> GetTreeDrawCommand(UInt_t,UInt_t);
   void OverrideRootFile(std::vector<UInt_t>);
 };
 

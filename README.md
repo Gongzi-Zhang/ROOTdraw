@@ -81,7 +81,7 @@ Examples of these options can be found in macros/defaul.cfg.
     and M numbers of rows;
 - **title** 
     followed by any number of strings (spaces can be included) allows you 
-    to set the title for the tab
+    to set the title for the tab. 
 ### Drawing options
     draw will search the Ttrees that it finds in the file you specified 
     and will extract the branch names. It simplifies the drawing from a 
@@ -110,3 +110,17 @@ Examples of these options can be found in macros/defaul.cfg.
 - **guicolor** 
     followed by the string of a color like (white, red, blue) allows you to 
     set the border color of the gui
+
+## Command line draw option
+
+ - **tree**
+    specify which tree to use, if not specified, the program will search all
+    the trees for the varaible, and use the first matching tree.
+ - **title**
+    must be followed by a string, if you want to include space in your title, 
+    they must be quoted.
+    Only one title per command line, no matter how many plots will be drew.
+ - **type**
+    draw options for histogram
+ - **grid**
+    add grid to plot or not, same as title, only needed to be specified once.

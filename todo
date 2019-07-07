@@ -4,5 +4,8 @@
   -- page title
   -- pad title
 
+* legend
+* statsbox
+
 * customized draw option and statistics
   -- line, marker, label (style, color, size)

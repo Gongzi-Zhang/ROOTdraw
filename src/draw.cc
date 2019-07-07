@@ -223,6 +223,7 @@ void DrawGUI::DoDraw()
   fCanvas->Clear();
 
   gStyle->SetOptStat(1110);
+  gStyle->SetOptTitle(0);
   gStyle->SetStatFontSize(0.08);
   if (fConfig->IsLogy(current_page)) {
     printf("\nFound a logy!!!\n\n");
@@ -232,17 +233,20 @@ void DrawGUI::DoDraw()
   }
   //   gStyle->SetTitleH(0.10);
   //   gStyle->SetTitleW(0.40);
-  gStyle->SetTitleX(0.350);
-  gStyle->SetTitleY(0.995);
-  gStyle->SetTitleH(0.10);
-  gStyle->SetTitleW(0.60);
-  gStyle->SetStatH(0.70);
-  gStyle->SetStatW(0.35);
+  // gStyle->SetTitleX(0.350);
+  // gStyle->SetTitleY(0.995);
+  // gStyle->SetTitleH(0.10);
+  // gStyle->SetTitleW(0.60);
+  // gStyle->SetStatH(0.70);
+  // gStyle->SetStatW(0.35);
   //   gStyle->SetLabelSize(0.10,"X");
   //   gStyle->SetLabelSize(0.10,"Y");
   gStyle->SetLabelSize(0.05,"X");
   gStyle->SetLabelSize(0.05,"Y");
-  gStyle->SetPadLeftMargin(0.14);
+  gStyle->SetPadLeftMargin(0.09);
+  gStyle->SetPadRightMargin(0.09);
+  gStyle->SetPadTopMargin(0.11);
+  gStyle->SetPadBottomMargin(0.05);
   gStyle->SetNdivisions(505,"X");
   gStyle->SetNdivisions(404,"Y");
   gROOT->ForceStyle();
@@ -263,18 +267,19 @@ void DrawGUI::DoDraw()
   fCanvas->Clear();
   fCanvas->Divide(dim.first,dim.second);
 
-  vector <TString> drawcommand;
+  vector <TString> drawCommand;
   // Draw the histograms.
   for(UInt_t i=0; i<draw_count; i++) {    
-    drawcommand = fConfig->GetDrawCommand(current_page,i);
+    drawCommand = fConfig->GetDrawCommand(current_page,i);
     fCanvas->cd(i+1);
 //    int nDraw = drawcommand.size()/6; // FIXME, remember to change this value when increase new options 
-    if (drawcommand[0] == "macro") {
-      MacroDraw(drawcommand);
-    } else if (IsHistogram(drawcommand[0])) {
-      HistDraw(drawcommand);
+    if (drawCommand[0] == "macro") {
+      MacroDraw(drawCommand);
+    } else if (IsHistogram(drawCommand[0])) {
+      HistDraw(drawCommand);
     } else {
-      TreeDraw(drawcommand);
+      list <TString> treeDrawCommand = fConfig->GetTreeDrawCommand(current_page,i);
+      TreeDraw(treeDrawCommand);
     }
   }
       
@@ -355,16 +360,14 @@ Bool_t DrawGUI::IsHistogram(TString objectname)
   for(UInt_t i=0; i<fileObjects.size(); i++) {
     if (fileObjects[i].first.Contains(objectname)) {
       if(fVerbosity>=2)
-	cout << fileObjects[i].first << "      "
-	     << fileObjects[i].second << endl;
+        cout << fileObjects[i].first << "      " << fileObjects[i].second << endl;
 
       if(fileObjects[i].second.Contains("TH"))
-	return kTRUE;
+        return kTRUE;
     }
   }
 
   return kFALSE;
-
 }
 
 void DrawGUI::GetFileObjects() 
@@ -652,27 +655,28 @@ void DrawGUI::OpenRootFiles() {
 void DrawGUI::HistDraw(vector <TString> command) {
   // Called by DoDraw(), this will plot a histogram.
 
+  TString histName = command[0];
   Bool_t showGolden=kFALSE;
   if(doGolden) showGolden=kTRUE;
 
   if(command.size()==2)
-    if(command[1]=="noshowgolden") {
+    if(command[1] == "noshowgolden") {
       showGolden = kFALSE;
     }
   cout<<"showGolden= "<<showGolden<<endl;
 
   // Determine dimensionality of histogram
   for(UInt_t i=0; i<fileObjects.size(); i++) {
-    if (fileObjects[i].first.Contains(command[0])) {
+    if (fileObjects[i].first.Contains(histName)) {
       if(fileObjects[i].second.Contains("TH1")) {
-	if(showGolden) fRootFile->cd();
-	mytemp1d = (TH1D*)gDirectory->Get(command[0]);
-	if(mytemp1d->GetEntries()==0) {
-	  BadDraw("Empty Histogram");
+        if(showGolden) fRootFile->cd();
+        mytemp1d = (TH1D*)gDirectory->Get(histName);
+        if(mytemp1d->GetEntries()==0) {
+          BadDraw("Empty Histogram");
 	} else {
 	  if(showGolden) {
 	    fGoldenFile->cd();
-	    mytemp1d_golden = (TH1D*)gDirectory->Get(command[0]);
+	    mytemp1d_golden = (TH1D*)gDirectory->Get(histName);
 	    mytemp1d_golden->SetLineColor(30);
 	    mytemp1d_golden->SetFillColor(30);
 	    Int_t fillstyle=3027;
@@ -689,14 +693,14 @@ void DrawGUI::HistDraw(vector <TString> command) {
       }
       if(fileObjects[i].second.Contains("TH2")) {
 	if(showGolden) fRootFile->cd();
-	mytemp2d = (TH2D*)gDirectory->Get(command[0]);
+	mytemp2d = (TH2D*)gDirectory->Get(histName);
 	if(mytemp2d->GetEntries()==0) {
 	  BadDraw("Empty Histogram");
 	} else {
 	  // These are commented out for some reason (specific to DVCS?)
 	  // 	  if(showGolden) {
 	  // 	    fGoldenFile->cd();
-	  // 	    mytemp2d_golden = (TH2D*)gDirectory->Get(command[0]);
+	  // 	    mytemp2d_golden = (TH2D*)gDirectory->Get(histName);
 	  // 	    mytemp2d_golden->SetMarkerColor(2);
 	  // 	    mytemp2d_golden->Draw();
 	  //mytemp2d->Draw("sames");
@@ -708,14 +712,14 @@ void DrawGUI::HistDraw(vector <TString> command) {
       }
       if(fileObjects[i].second.Contains("TH3")) {
 	if(showGolden) fRootFile->cd();
-	mytemp3d = (TH3D*)gDirectory->Get(command[0]);
+	mytemp3d = (TH3D*)gDirectory->Get(histName);
 	if(mytemp3d->GetEntries()==0) {
 	  BadDraw("Empty Histogram");
 	} else {
 	  mytemp3d->Draw();
 	  if(showGolden) {
 	    fGoldenFile->cd();
-	    mytemp3d_golden = (TH3D*)gDirectory->Get(command[0]);
+	    mytemp3d_golden = (TH3D*)gDirectory->Get(histName);
 	    mytemp3d_golden->SetMarkerColor(2);
 	    mytemp3d_golden->Draw();
 	    mytemp3d->Draw("sames");
@@ -729,59 +733,63 @@ void DrawGUI::HistDraw(vector <TString> command) {
   }
 }
 
-void DrawGUI::TreeDraw(vector <TString> command) {
+void DrawGUI::TreeDraw(list <TString> command) {
   // Called by DoDraw(), this will plot a Tree Variable
 
-  int nField = 6;  // FIXME, remember to change this value when increase new options 
-  int nDraw = command.size()/nField;
-  for( int i=0; i<nDraw; i++){
-    TString var = command[i*nField+0];
+  int nField = 4;  // FIXME, remember to change this value when increase new options 
+  int nDraw = (command.size()-2)/nField;  // -2 for title and grid
+
+  TString title = command.front(); command.pop_front();
+  TString grid = command.front(); command.pop_front();
+  for( int iDraw=0; iDraw<nDraw; iDraw++){
 
     /* extract draw info: var, cut and drawopt */
 
+    // var
+    TString var = command.front();  command.pop_front();
     //  Check to see if we're projecting to a specific histogram
-    TString histoname = command[i*nField+0](TRegexp(">>.+(?"));
+    TString histoname = var(TRegexp(">>.+(?"));
     if (histoname.Length()>0){
       histoname.Remove(0,2);
       Int_t bracketindex = histoname.First("(");
       if (bracketindex>0) histoname.Remove(bracketindex);
       if(fVerbosity>=3)
-        std::cout << histoname << " "<< command[i*nField+0](TRegexp(">>.+(?")) <<std::endl;
+        std::cout << histoname << " "<< var(TRegexp(">>.+(?")) <<std::endl;
     } else {
 //      histoname = "htemp";
-      histoname = Form("%s_%d", var.Data(), i);
+      histoname = Form("%s_%d", var.Data(), iDraw);
     }
     
     // Combine the cuts (definecuts and specific cuts)
-    TCut cut = "";
-    TString tempCut;
-    if(!command[i*nField+1].IsNull()) {
-      tempCut = command[i*nField+1];
+    TString cut = command.front(); command.pop_front();
+    if(!cut.IsNull()) {
       vector <TString> cutIdents = fConfig->GetCutIdent();
       for(UInt_t i=0; i<cutIdents.size(); i++) {
-        if(tempCut.Contains(cutIdents[i])) {
+        if(cut.Contains(cutIdents[i])) {
           TString cut_found = (TString)fConfig->GetDefinedCut(cutIdents[i]);
-          tempCut.ReplaceAll(cutIdents[i],cut_found); // FIXME
+          cut.ReplaceAll(cutIdents[i],cut_found); // FIXME
         }
       }
-      cut = (TCut)tempCut;
     }
 
     // Determine which Tree the variable comes from, then draw it.
+    TString tree = command.front(); command.pop_front();
     UInt_t iTree;
-    if(command[i*nField+4].IsNull()) {
+    if(tree.IsNull()) {
       iTree = GetTreeIndex(var);
       if(fVerbosity>=2)
         cout<<"got tree index from variable: "<<iTree<<endl;
     } else {
-      iTree = GetTreeIndexByName(command[i*nField+4]);
+      iTree = GetTreeIndexByName(tree);
       if(fVerbosity>=2)
         cout<<"got tree index from command: "<<iTree<<endl;
     }
-    TString drawopt = command[i*nField+2];
+
+    // draw options
+    TString drawopt = command.front();  command.pop_front();
     if(fVerbosity>=3)
       cout<<"\tDraw option:"<<drawopt<<" and histo name "<<histoname<<endl;
-    if(i>0) {
+    if(iDraw>0) {
       if (drawopt.IsNull())
         drawopt = "same"; // so that multiplots will be drew
       else
@@ -793,14 +801,15 @@ void DrawGUI::TreeDraw(vector <TString> command) {
     }
 
 
+    // draw histogram
     Int_t errcode=0;
     if(iTree == -1) {
       BadDraw(var+" not found");
     } else {
       if(fVerbosity>=1){
         cout<<__PRETTY_FUNCTION__<<"\t"<<__LINE__<<endl;
-        cout<<command[0]<<"\t"<<command[i*nField+1]<<"\t"<<command[i*nField+2]
-            <<"\t"<<command[i*nField+3] <<"\t"<<command[i*nField+4]<<endl;
+        cout<< "subdraw command " << iDraw << ":\t" << var <<"\t"<< cut << "\t" << tree
+            <<"\t"<< drawopt << endl;
         if(fVerbosity>=2)
         cout<<"\tProcessing from tree: "<<iTree<<"\t"<<fRootTree[iTree]->GetTitle()<<"\t"
         <<fRootTree[iTree]->GetName()<<endl;
@@ -809,13 +818,22 @@ void DrawGUI::TreeDraw(vector <TString> command) {
       errcode = fRootTree[iTree]->Draw(Form("%s>>%s", var.Data(), histoname.Data()),cut,drawopt);
 //      errcode = fRootTree[iTree]->Draw(Form("%s", var.Data()),cut,drawopt);
 
-      if (command[i*nField+5].EqualTo("grid")){ // FIXME for grid option, only need to check the last one
-        gPad->SetGrid();
-      }
-
-//      TObject *hobj = (TObject*)gPad->FindObject(histoname);
       if(fVerbosity>=3)
         cout<<"Finished drawing with error code "<<errcode<<endl;
+
+      TH1 *hist = (TH1*)gPad->FindObject(histoname);
+      if (iDraw == 0) {
+        if (title.IsNull()) 
+          title = hist->GetTitle();
+//        TH1 *hobj = (TH1*)gPad->FindObject(histoname);
+//        if 
+      }
+
+      if(iDraw>0) {
+        hist->SetLineColor(2*iDraw);
+        hist->SetMarkerColor(2*iDraw);
+      }
+
 
 //      TH1* temphist = (TH1*) hobj;
 //      gPad->Update(); // always remember to update pad in order to find stats box
@@ -836,26 +854,30 @@ void DrawGUI::TreeDraw(vector <TString> command) {
 
       if(errcode==-1) {
         BadDraw(var+" not found");
-      } else if (errcode!=0) {
-        if(!command[i*nField+3].IsNull()) {
+      } else if (errcode==0) {
+        BadDraw("Empty Histogram");
+      }
+        // if(!var.IsNull()) {
           //  Generate a "unique" histogram name based on the MD5 of the drawn variable, cut, drawopt,
           //  and plot title.
           //  Makes it less likely to cause a name collision if two plot titles are the same.
           //  If you draw the exact same plot twice, the histograms will have the same name, but
           //  since they are exactly the same, you likely won't notice (or it will complain at you).
-//          TString tmpstring(var);
-//          tmpstring += cut.GetTitle();
-//          tmpstring += drawopt;
-//          tmpstring += command[i*nField+3];
-//          TString myMD5 = tmpstring.MD5();
-//          TH1* thathist = (TH1*)hobj;
-//          thathist->SetNameTitle(myMD5,command[i*nField+3]);
-        }
-      } else {
-        BadDraw("Empty Histogram");
-      }
+          // TString tmpstring(var);
+          // tmpstring += cut.GetTitle();
+          // tmpstring += drawopt;
+          // TString myMD5 = tmpstring.MD5();
+          // TH1* thathist = (TH1*)hobj;
+        // }
     }
   }
+  TLatex *tTitle = new TLatex(0.09, 0.91, title);
+  tTitle->SetNDC();
+  tTitle->SetTextSize(0.07);
+  tTitle->Draw();
+
+  if (!grid.IsNull())
+    gPad->SetGrid();
 }
 
 void DrawGUI::PrintToFile()

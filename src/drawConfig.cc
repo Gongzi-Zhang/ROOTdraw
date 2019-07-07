@@ -147,7 +147,7 @@ void DrawConfig::ParseFile()
   if(fVerbosity>=1){
     cout << "DrawConfig::ParseFile()\n";
     for(UInt_t ii=0; ii<sConfFile.size(); ii++) {
-      cout << "Line " << ii << ":\t"<< sConfFile[ii] << endl;
+      cout << "Line " << ii << ":\t"<< sConfFile[ii] << "endl" << endl;
     }
   }
 
@@ -468,23 +468,33 @@ UInt_t DrawConfig::GetDrawCount(UInt_t page)
 
 }
 
-vector <TString> DrawConfig::GetDrawCommand(UInt_t page, UInt_t nCommand)
-{
+vector <TString> DrawConfig::GetDrawCommand(UInt_t page, UInt_t nCommand) {
+  vector <UInt_t> command_vector = GetDrawIndex(page);
+  UInt_t index = command_vector[nCommand];
+  return strparse::split(sConfFile[index], " ");
+}
+
+list <TString> DrawConfig::GetTreeDrawCommand(UInt_t page, UInt_t nCommand) { // only for tree draw
   // Returns the vector of strings pertaining to a specific page, and 
   //   draw command from the config.
   // Return vector of TStrings:
-  //  0: variable
-  //  1: cut
-  //  2: type
-  //  3: title
-  //  4: treename
-  //  5: grid
+  //  0: title
+  //  1: grid
+  //
+  //  0: var1
+  //  1: cut1
+  //  2: opt1
+  //  3: tree1
+  //  0: var2
+  //  1: cut2
+  //  2: opt2
+  //  3: tree2
 
   vector <UInt_t> command_vector = GetDrawIndex(page);
   UInt_t index = command_vector[nCommand];
   TString commandLine = sConfFile[index];
   vector<TString> subCommands;
-  int nField = 6; // number of field per command
+  int nField = 4; // number of field per command: var, cut, opt, tree
 
   // identify how many draw command, seperated by ;
   int sindex = strparse::first_unquoted(commandLine, ';');
@@ -507,7 +517,7 @@ vector <TString> DrawConfig::GetDrawCommand(UInt_t page, UInt_t nCommand)
     cout << "Find " << nDraw << " commands in line: " << endl
          << "\t" << sConfFile[index] << endl;
   }
-  vector <TString> out_command(nField*nDraw);
+  vector <TString> out_command(nField*nDraw+2);
 
   if(fVerbosity > 1){
     cout<<__PRETTY_FUNCTION__<<"\t"<<__LINE__<<endl;
@@ -523,7 +533,7 @@ vector <TString> DrawConfig::GetDrawCommand(UInt_t page, UInt_t nCommand)
     // First word is the variable
     vector <TString> subcommand = strparse::split(subCommands[iDraw], " ");
     if(subcommand.size()>=1) {
-      out_command[nField*iDraw+0] = subcommand[0];
+      out_command[nField*iDraw+2] = subcommand[0];
     }
 
     // Second word might be the cut.
@@ -532,14 +542,14 @@ vector <TString> DrawConfig::GetDrawCommand(UInt_t page, UInt_t nCommand)
        subcommand[1] != "-title" &&
        subcommand[1] != "-tree" &&
        subcommand[1] != "-grid") {
-      out_command[nField*iDraw+1] = subcommand[1];
+      out_command[nField*iDraw+3] = subcommand[1];
     }
 
     // Now go through the rest of that line..
     for (UInt_t i=2; i<subcommand.size(); i++) {
       if(subcommand[i]=="-type") {
-        if(out_command[nField*iDraw+2].IsNull()){
-          out_command[nField*iDraw+2] = subcommand[i+1];
+        if(out_command[nField*iDraw+5].IsNull()){
+          out_command[nField*iDraw+5] = subcommand[i+1];
           i = i+1;
         } else {
           cerr << "Error: Multiple types in line: " << endl
@@ -571,6 +581,12 @@ vector <TString> DrawConfig::GetDrawCommand(UInt_t page, UInt_t nCommand)
 //        }
 
 
+        /* possible title:
+        * 1: single word: title
+        * 2: quoted multi-words:  "a long title" or 'a long title'
+        * 3: including quote:     " inlcuding 'single quote' " or 'including "double quote" '
+        * 4: begin/end with quote: " a title", "a title ", " a title "
+        */
         TString quote;
         TString word = subcommand[i+1]; // the next word
         if (word.BeginsWith("\""))
@@ -621,10 +637,10 @@ vector <TString> DrawConfig::GetDrawCommand(UInt_t page, UInt_t nCommand)
                << "\t" << subCommands[iDraw] << endl; 
           exit(1);
         }
-        if (out_command[nField*iDraw+3].IsNull()){
-          out_command[nField*iDraw+3] = title;
+        if (out_command[0].IsNull()){
+          out_command[0] = title;
         } else {
-          cerr << "Error: Multiple titles in line: " << endl
+          cerr << "Error: Redifinition of title in line (only one title per command line): " << endl
                << "\t" << sConfFile[index] << endl; 
           exit(1);
         }
@@ -638,12 +654,11 @@ vector <TString> DrawConfig::GetDrawCommand(UInt_t page, UInt_t nCommand)
           exit(1);
         }
       } else if(subcommand[i]=="-grid") {
-        if (out_command[nField*iDraw+5].IsNull()){ // grid option only works with TreeDraw
-          out_command[nField*iDraw+5] = "grid";
+        if (out_command[1].IsNull()){ // grid option only works with TreeDraw
+          out_command[1] = "grid";
         } else {
-          cerr << "Error: Multiple setup of grid in line" << endl
+          cerr << "Warning: Multi-times setup of grid in line" << endl
                << "\t" << sConfFile[index] << endl; 
-          exit(1);
         }
       } else { // unknow option
         cerr << "Error: unknow option: " << subcommand[i] << "\tin line: " << endl
@@ -666,7 +681,8 @@ vector <TString> DrawConfig::GetDrawCommand(UInt_t page, UInt_t nCommand)
     }
   }
 
-  return out_command;
+  list <TString> out_list(out_command.begin(), out_command.end());
+  return out_list;
 }
 
 void DrawConfig::OverrideRootFile(std::vector<UInt_t> runnumbers) 
