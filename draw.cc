@@ -97,8 +97,7 @@ void draw(TString type,std::vector <UInt_t> runs,Bool_t printonly, int ver){
   cout<<"Starting processing cfg. Time passed: "
       <<(double) ((clock() - tStart)/CLOCKS_PER_SEC)<<" s!"<<endl;
 
-  DrawConfig *fconfig = new DrawConfig(type);
-  fconfig->SetVerbosity(ver);
+  DrawConfig *fconfig = new DrawConfig(type, ver);
   if(!fconfig->ParseConfig()) {
     gApplication->Terminate();
   }

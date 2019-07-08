@@ -35,7 +35,7 @@ private:
 
 public:
   DrawConfig();
-  DrawConfig(TString);
+  DrawConfig(TString, int ver=0);
   int GetRunNumber(int i=0){return fRunNumbers[i];}
   TString GetConfFileName(){return confFileName;}
   void Get2DnumberBins(int &nX, int &nY){nX = hist2D_nBinsX; nY = hist2D_nBinsY;}

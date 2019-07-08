@@ -244,7 +244,7 @@ void DrawGUI::DoDraw()
   gStyle->SetLabelSize(0.05,"X");
   gStyle->SetLabelSize(0.05,"Y");
   gStyle->SetPadLeftMargin(0.09);
-  gStyle->SetPadRightMargin(0.09);
+  gStyle->SetPadRightMargin(0.01);
   gStyle->SetPadTopMargin(0.11);
   gStyle->SetPadBottomMargin(0.05);
   gStyle->SetNdivisions(505,"X");
@@ -821,10 +821,17 @@ void DrawGUI::TreeDraw(list <TString> command) {
       if(fVerbosity>=3)
         cout<<"Finished drawing with error code "<<errcode<<endl;
 
-      TH1 *hist = (TH1*)gPad->FindObject(histoname);
+      TH1 *hist = (TH1*)gROOT->FindObject(histoname);
+//      TH1 *hist = (TH1*)gROOT->FindObject(histoname);	// FIXME I don't want to use gROOT
       if (iDraw == 0) {
-        if (title.IsNull()) 
+        if (title.IsNull()) {
           title = hist->GetTitle();
+	  if (fVerbosity >= 1) {
+	    cout << __PRETTY_FUNCTION__ << "\t" << __LINE__ <<endl
+		 <<"\t set plot title to: " << title <<endl;
+	  }
+	}
+	
 //        TH1 *hobj = (TH1*)gPad->FindObject(histoname);
 //        if 
       }

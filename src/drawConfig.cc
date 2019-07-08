@@ -24,8 +24,8 @@ DrawConfig::DrawConfig()
   DrawConfig("standard");
 }
 
-DrawConfig::DrawConfig(TString anatype): 
-  confFileName(anatype),fVerbosity(0),
+DrawConfig::DrawConfig(TString anatype, int ver): 
+  confFileName(anatype),fVerbosity(ver),
   hist2D_nBinsX(0),hist2D_nBinsY(0), 
   fPlotFormat(""),fRunNumbers(0)
 {
@@ -71,11 +71,9 @@ DrawConfig::DrawConfig(TString anatype):
 
   fConfFile->close();
   delete fConfFile;
-
 }
 
-void DrawConfig::ParseFile() 
-{
+void DrawConfig::ParseFile() {
   // Reads in the Config File, and makes the proper calls to put
   //  the information contained into memory.
 
@@ -90,7 +88,7 @@ void DrawConfig::ParseFile()
 
     // remove ';' and space until the first valid char
     while (sline.BeginsWith(';') || sline.BeginsWith(' ') || sline.BeginsWith('\t')) { 
-      sline = sline(1, sline.Length());
+      sline.Remove(0, 1);
     }
     if (sline.Length() == 0) {  // line contains only ';' and space
       continue;
@@ -110,7 +108,7 @@ void DrawConfig::ParseFile()
     } else if (cpos > 0) {  // has comment
       sline = sline(0, cpos);
       sline = strparse::strip_tail_space(sline);
-      TPRegexp(";[ ;]*").Substitute(sline, ";"); // FIXME, how to deal with tab (\t)
+      TPRegexp(";[ ;]+").Substitute(sline, ";"); // FIXME, how to deal with tab (\t); replace all
       // in rare case, three may be multiple ; within quotes, which will also be replaced
       sConfFile.push_back(sline);
       continue;
@@ -140,7 +138,7 @@ void DrawConfig::ParseFile()
       sline = strparse::strip_tail_space(sline);
     }
 
-    TPRegexp(";[ ;]*").Substitute(sline, ";"); // FIXME, how to deal with tab (\t)
+    TPRegexp(";[ ;]+").Substitute(sline, ";"); // FIXME, how to deal with tab (\t)? I need to replace all accurence, not just the first one
     sConfFile.push_back(sline);
   }
 
@@ -154,8 +152,7 @@ void DrawConfig::ParseFile()
   cout << "\t" << sConfFile.size() << " lines read from " << confFileName << endl;
 }
 
-Bool_t DrawConfig::ParseConfig() 
-{
+Bool_t DrawConfig::ParseConfig() {
   //  Goes through each line of the config [must have been ParseFile()'d]
   //   and interprets.
 
@@ -498,9 +495,9 @@ list <TString> DrawConfig::GetTreeDrawCommand(UInt_t page, UInt_t nCommand) { //
 
   // identify how many draw command, seperated by ;
   int sindex = strparse::first_unquoted(commandLine, ';');
-  while (sindex != -1 && sindex < commandLine.Length()) {
+  while (sindex != -1 && sindex < (commandLine.Length()-1)) {
     subCommands.push_back(commandLine(0, sindex));
-    commandLine = commandLine(sindex+1, commandLine.Length());
+    commandLine.Remove(0, sindex+1);
     // in parsefile, we have make sure that no extra ';' or space follow a ';'
     // commandLine = strparse::strip_head_space(commandLine);
     sindex = strparse::first_unquoted(commandLine, ';');
@@ -516,6 +513,13 @@ list <TString> DrawConfig::GetTreeDrawCommand(UInt_t page, UInt_t nCommand) { //
   if(nDraw > 1) {
     cout << "Find " << nDraw << " commands in line: " << endl
          << "\t" << sConfFile[index] << endl;
+  }
+  if(fVerbosity >= 1) {
+    cout << __PRETTY_FUNCTION__ << "\t" << __LINE__ << endl;
+    cout << "DrawConfig::GetDrawCommand(" << page << "," << nCommand << ")" << endl;
+    for (int i=0; i<nDraw; i++) {
+      cout << "\t" << subCommands[i] << endl;
+    }
   }
   vector <TString> out_command(nField*nDraw+2);
 
@@ -667,13 +671,13 @@ list <TString> DrawConfig::GetTreeDrawCommand(UInt_t page, UInt_t nCommand) { //
       }
     }
 
-    if(fVerbosity>=1){  // print each subcommand
-      cout << subcommand.size() << ": ";
-      for(UInt_t i=0; i<subcommand.size(); i++) {
-        cout << subcommand[i] << " ";
-      }
-      cout << endl;
-    }
+//    if(fVerbosity>=1){  // print each subcommand
+//      cout << subcommand.size() << ": ";
+//      for(UInt_t i=0; i<subcommand.size(); i++) {
+//        cout << subcommand[i] << " ";
+//      }
+//      cout << endl;
+//    }
   }
   if(fVerbosity >= 1) { // print all command
     for(UInt_t i=0; i<out_command.size(); i++) {
