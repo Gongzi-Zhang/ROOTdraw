@@ -9,3 +9,12 @@
 
 * customized draw option and statistics
   -- line, marker, label (style, color, size)
+
+
+* watermark:
+  TLatex *watermark = new TLatex(0.1, 0.2, "PREX-II");
+  watermark->SetTextColor(17);
+  watermark->SetTextSize(0.1991525);
+  watermark->SetTextAngle(26.15998);
+  watermark->SetLineWidth(2);
+  watermark->Draw();

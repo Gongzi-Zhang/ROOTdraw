@@ -243,10 +243,10 @@ void DrawGUI::DoDraw()
   //   gStyle->SetLabelSize(0.10,"Y");
   gStyle->SetLabelSize(0.05,"X");
   gStyle->SetLabelSize(0.05,"Y");
-  gStyle->SetPadLeftMargin(0.09);
+  gStyle->SetPadLeftMargin(0.1);
   gStyle->SetPadRightMargin(0.01);
   gStyle->SetPadTopMargin(0.11);
-  gStyle->SetPadBottomMargin(0.05);
+  gStyle->SetPadBottomMargin(0.08);
   gStyle->SetNdivisions(505,"X");
   gStyle->SetNdivisions(404,"Y");
   gROOT->ForceStyle();
@@ -821,43 +821,52 @@ void DrawGUI::TreeDraw(list <TString> command) {
       if(fVerbosity>=3)
         cout<<"Finished drawing with error code "<<errcode<<endl;
 
-      TH1 *hist = (TH1*)gROOT->FindObject(histoname);
-//      TH1 *hist = (TH1*)gROOT->FindObject(histoname);	// FIXME I don't want to use gROOT
-      if (iDraw == 0) {
-        if (title.IsNull()) {
-          title = hist->GetTitle();
-	  if (fVerbosity >= 1) {
-	    cout << __PRETTY_FUNCTION__ << "\t" << __LINE__ <<endl
-		 <<"\t set plot title to: " << title <<endl;
-	  }
-	}
-	
-//        TH1 *hobj = (TH1*)gPad->FindObject(histoname);
-//        if 
+      TGraph *g_buff = (TGraph*) gPad->FindObject("Graph");
+      TH1 *hist = (TH1*)gPad->FindObject(histoname);	
+
+      if (g_buff) { // scatter plot
+        g_buff->SetName(Form("Graph_%s_%d", var.Data(), iDraw));
+//      TGraph *hist = (TGraph*)gROOT->FindObject(histoname); // FIXME I don't want to use gROOT here
+        if(iDraw>0) {
+//          hist->SetMarkerStyle(20);
+          g_buff->SetLineColor(2*iDraw);
+          g_buff->SetMarkerColor(2*iDraw);
+        }
+      } 
+
+      if (hist) { // histogram
+        if (iDraw == 0) {
+          if (title.IsNull()) {
+            title = hist->GetTitle();
+            if (fVerbosity >= 1) {
+              cout << __PRETTY_FUNCTION__ << "\t" << __LINE__ <<endl
+                   <<"\t set plot title to: " << title <<endl;
+            }
+          }
+        } else {
+          hist->SetLineColor(2*iDraw);
+          hist->SetMarkerColor(2*iDraw);
+        }
+        gPad->Update(); // always remember to update pad in order to find stats box
+        TPaveStats * st = (TPaveStats*) gPad->GetPrimitive("stats");
+        if (st) { // 1-D hist
+          st->SetName("myStats"); // why this so important ???
+          TList* listOfLines = st->GetListOfLines();
+          TText * rm = st->GetLineWith("Dev");
+          Float_t size = rm->GetTextSize();
+          // listOfLines->Remove(rm);
+          TLatex* meanError = new TLatex(0, 0, Form("MeanError = %.4g", hist->GetMeanError()));
+          meanError->SetTextSize(size);
+          listOfLines->Add(meanError);
+          hist->SetStats(0);
+          gPad->Modified();
+
+          Float_t ratio = abs(hist->GetMean())/hist->GetMeanError();
+          printf("var: %s\t mean: %.4g\t meanerror: %.4g\t ratio: %.4g\n", var.Data(), hist->GetMean(), hist->GetMeanError(), ratio);
+        }
       }
 
-      if(iDraw>0) {
-        hist->SetLineColor(2*iDraw);
-        hist->SetMarkerColor(2*iDraw);
-      }
 
-
-//      TH1* temphist = (TH1*) hobj;
-//      gPad->Update(); // always remember to update pad in order to find stats box
-//      TPaveStats * st = (TPaveStats*) gPad->GetPrimitive("stats");
-//      st->SetName("myStats"); // why this so important ???
-//      TList* listOfLines = st->GetListOfLines();
-//      TText * rm = st->GetLineWith("Dev");
-//      Float_t size = rm->GetTextSize();
-//      // listOfLines->Remove(rm);
-//      TLatex* meanError = new TLatex(0, 0, Form("MeanError = %.4g", temphist->GetMeanError()));
-//      meanError->SetTextSize(size);
-//      listOfLines->Add(meanError);
-//      temphist->SetStats(0);
-//      gPad->Modified();
-
-//      Float_t ratio = abs(temphist->GetMean())/temphist->GetMeanError();
-//      printf("var: %s\t mean: %.4g\t meanerror: %.4g\t ratio: %.4g\n", var.Data(), temphist->GetMean(), temphist->GetMeanError(), ratio);
 
       if(errcode==-1) {
         BadDraw(var+" not found");
@@ -884,7 +893,12 @@ void DrawGUI::TreeDraw(list <TString> command) {
   tTitle->Draw();
 
   if (!grid.IsNull())
-    gPad->SetGrid();
+    if (grid == "grid")
+      gPad->SetGrid();
+    else if (grid == "gridX")
+      gPad->SetGridx();
+    else if (grid == "gridY")
+      gPad->SetGridy();
 }
 
 void DrawGUI::PrintToFile()

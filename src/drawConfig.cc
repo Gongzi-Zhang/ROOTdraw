@@ -478,14 +478,8 @@ list <TString> DrawConfig::GetTreeDrawCommand(UInt_t page, UInt_t nCommand) { //
   //  0: title
   //  1: grid
   //
-  //  0: var1
-  //  1: cut1
-  //  2: opt1
-  //  3: tree1
-  //  0: var2
-  //  1: cut2
-  //  2: opt2
-  //  3: tree2
+  //  0: var1;  1: cut1;  2: opt1;  3: tree1;  4: stat opt
+  //  0: var1;  1: cut1;  2: opt1;  3: tree1;  4: stat opt
 
   vector <UInt_t> command_vector = GetDrawIndex(page);
   UInt_t index = command_vector[nCommand];
@@ -545,7 +539,7 @@ list <TString> DrawConfig::GetTreeDrawCommand(UInt_t page, UInt_t nCommand) { //
     if(subcommand[1] != "-type" &&
        subcommand[1] != "-title" &&
        subcommand[1] != "-tree" &&
-       subcommand[1] != "-grid") {
+       !subcommand[1].BeginsWith("-grid")) {
       out_command[nField*iDraw+3] = subcommand[1];
     }
 
@@ -657,9 +651,19 @@ list <TString> DrawConfig::GetTreeDrawCommand(UInt_t page, UInt_t nCommand) { //
                << "\t" << sConfFile[index] << endl; 
           exit(1);
         }
-      } else if(subcommand[i]=="-grid") {
+      } else if(subcommand[i].BeginsWith("-grid")) {
         if (out_command[1].IsNull()){ // grid option only works with TreeDraw
-          out_command[1] = "grid";
+          if (subcommand[i] == "-grid")
+            out_command[1] = "grid";
+          else if (subcommand[i] == "-gridX")
+            out_command[1] = "gridX";
+          else if (subcommand[i] == "-gridY")
+            out_command[1] = "gridY";
+          else {
+            cerr << "Warning: invalid grid option in line:" << endl
+                 << "\t" << sConfFile[index] << endl
+                 << "valid grid option: -grid, -gridX, -gridY" << endl;
+          }
         } else {
           cerr << "Warning: Multi-times setup of grid in line" << endl
                << "\t" << sConfFile[index] << endl; 
